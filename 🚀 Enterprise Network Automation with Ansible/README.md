@@ -14,7 +14,7 @@ This project demonstrates Infrastructure as Code principles by automating Cisco 
 
 **Ansible**-For configuration management and automation
 **Cisco IOS**-As the network devices operating system
-**SSH/Pylibssh**-For secure device connectivity
+**SSH/Paramiko**-For secure device connectivity
 **YAML**-For playbook and inventory configurations
 **AWS EC2**-The cloud infrastructure hosting as the GNS3 Server
 **GNS3 Ubuntu Docker Container**-As the containerized control node
