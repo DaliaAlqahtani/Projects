@@ -1,6 +1,9 @@
 **📘 Project Overview**
 
-This project demonstrates Infrastructure as Code principles by automating Cisco switch configurations using Ansible. The automation streamlines the deployment of VLANs, DHCP security, and port security across multiple switches in a simulated enterprise environment.
+This project demonstrates Infrastructure as Code (IaaC) principles by automating Cisco switch configurations using Ansible. The automation streamlines the deployment of VLANs, DHCP security, and port security across multiple switches in a simulated enterprise environment.
+
+Network Automation is a critical component of modern enterprise infrastructure. It reduces configuration errors and significantly accelerates deployment times compared to traditional manual methods. By enforcing consistent configurations across devices, it also helps prevent policy drift and ensures that network standards are maintained over time.
+
 
 **🧩 Topology Details**
 
