@@ -22,17 +22,17 @@ This project demonstrates Infrastructure as Code principles by automating Cisco 
 **🔧Automated Configurations**
 
 **ACSW1 (One of HR Switchs)**
-✅ VLAN 20 creation and naming
-✅ DHCP snooping implementation
-✅ Port security on access ports
-✅ Trunk configuration with allowed VLANs
+- ✅ VLAN 20 creation and naming
+- ✅ DHCP snooping implementation
+- ✅ Port security on access ports
+- ✅ Trunk configuration with allowed VLANs
 
 **ACSW4 (One of Marketing Switchs)**
 
-✅ VLAN 30 creation and naming
-✅ DHCP snooping implementation
-✅ Port security on access ports
-✅ Trunk configuration with allowed VLANs
+- ✅ VLAN 30 creation and naming
+- ✅ DHCP snooping implementation
+- ✅ Port security on access ports
+- ✅ Trunk configuration with allowed VLANs
 
 **🔒 Security Implementations for this project**
 
@@ -58,5 +58,5 @@ This project demonstrates Infrastructure as Code principles by automating Cisco 
 **🤔 How Ansible Works?**
 
 Ansible mainly needs two types of components: **Inventory** and **Playbook.**
-**Inventory Management:** Defines the target hosts (e.g., servers, switches, routers) and their connection details, such as IP addresses, SSH credentials, or connection types.
-**Playbook Execution:** Executes a series of automation tasks (written in YAML) to configure, deploy, or manage systems on the defined targets.
+- **Inventory Management:** Defines the target hosts (e.g., servers, switches, routers) and their connection details, such as IP addresses, SSH credentials, or connection types.
+- **Playbook Execution:** Executes a series of automation tasks (written in YAML) to configure, deploy, or manage systems on the defined targets.
