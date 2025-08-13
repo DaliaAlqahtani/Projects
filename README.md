@@ -7,7 +7,6 @@ Each folder contains a self-contained project, complete with:
 - 📘 Project overview and objectives
 - 🖥️ Network topology diagrams
 - 🔧 Configuration files (routers, switches, PCs)
-- 🧪 GNS3 simulation files
 
 These projects are designed for learning, demonstration, and practical reinforcement of enterprise networking principles.
 
