@@ -56,6 +56,7 @@ This project demonstrates Infrastructure as Code principles by automating Cisco 
 - Basic switch configuration (SSH, user accounts, enable passwords)
 
 **🤔 How Ansible Works?**
+
 Ansible mainly needs two types of components: **Inventory** and **Playbook.**
 **Inventory Management:** Defines the target hosts (e.g., servers, switches, routers) and their connection details, such as IP addresses, SSH credentials, or connection types.
 **Playbook Execution:** Executes a series of automation tasks (written in YAML) to configure, deploy, or manage systems on the defined targets.
