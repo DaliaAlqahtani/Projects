@@ -1,0 +1,84 @@
+---
+- name: Automate Configurations for Enterprise Switches
+  hosts: cisco_switches
+  gather_facts: no
+  vars:
+    ansible_become: no
+
+  tasks:
+    - name: Configure VLAN
+      cisco.ios.ios_vlans:
+        config:
+          - vlan_id: "{{ vlan_number }}"
+            name: "{{ vlan_name }}"
+        state: merged
+      tags: vlan
+
+    - name: Enable DHCP Snooping Globally
+      cisco.ios.ios_config:
+        lines:
+          - ip dhcp snooping
+        save_when: modified
+      tags: dhcp_snooping
+
+    - name: Enable DHCP Snooping on VLAN
+      cisco.ios.ios_config:
+        lines:
+          - ip dhcp snooping vlan {{ vlan_number }}
+        save_when: modified
+      tags: dhcp_snooping
+
+    - name: Configure Access Ports
+      cisco.ios.ios_config:
+        lines:
+          - switchport mode access
+          - switchport access vlan {{ vlan_number }}
+          - switchport port-security
+          - switchport port-security maximum 1
+          - switchport port-security violation restrict
+          - switchport port-security mac-address sticky
+        parents: interface {{ item }}
+        save_when: modified
+      loop:
+        - e0/1
+        - e0/2
+        - e0/3
+        - e1/0
+        - e1/1
+        - e1/2
+        - e1/3
+        - e2/0
+        - e2/1
+        - e2/2
+        - e2/3
+        - e3/0
+        - e3/1
+        - e3/2
+        - e3/3
+      tags: access_ports
+
+    - name: Configure Trunk Port
+      cisco.ios.ios_config:
+        lines:
+          - ip dhcp snooping trust
+          - switchport trunk encapsulation dot1q
+          - switchport mode trunk
+          - switchport trunk native vlan 100
+          - switchport trunk allowed vlan {{ allowed_vlans }}
+        parents: interface {{ trunk_port }}
+        save_when: modified
+      tags: trunk_port
+
+    - name: Verify VLAN Configuration
+      cisco.ios.ios_command:
+        commands:
+          - show vlan brief
+          - show interfaces trunk
+      register: verification_output
+      tags: verify
+
+    - name: Display Verification Results
+      debug:
+        msg: "{{ verification_output.stdout_lines }}"
+      tags: verify
+
