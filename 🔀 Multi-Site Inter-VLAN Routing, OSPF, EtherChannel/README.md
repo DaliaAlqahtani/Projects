@@ -1,5 +1,3 @@
-**🌐 Multi-Site Inter-VLAN Routing with ROAS, OSPF, and EtherChannel**
-
 **📘 Project Overview**
 
 This project demonstrates a multi-site enterprise network topology that includes inter-VLAN routing via Router-on-a-Stick (ROAS) and dynamic routing using OSPF (Open Shortest Path First) as well as link aggregation. The topology simulates two separate branches (Branch-A and Branch-B), each implementing structured Layer 2 and Layer 3 designs for scalability and segmentation.
