@@ -78,7 +78,7 @@ After the script ran, the routable suffix can be viewed
 **Tenant**
 
 Here is an overview of the tenant used for this project. 
-- The tenant is named Najm Horizon Consulting.
+- The tenant is named **Najm Horizon Consulting**.
 - Primary Domain changed to fit the company name as `najmhorizon.onmicrosoft.com`. In a real production environment, the Domain name would end in a real domain like `.com` or `.net` not a fallback domain.
 - A Global Administrator was created to have full control, kept to a cloud-only account.
 
@@ -109,8 +109,6 @@ foreach ($dept in $departments) {
 <p align="center"><img width="2560" height="813" alt="security-groups" src="https://github.com/user-attachments/assets/aa930873-0945-4be8-a2dd-5901be515cd7" /></p>
 
 These use **Assigned** membership, where members are added directly. The **Dynamic** membership (where rules add people based on attributes) needs a paid license, and I only used the free tier.
-
-These use **Assigned** membership, where members are added directly. The more automatic **Dynamic** membership (where rules add people based on attributes) needs a paid license, so it was not an option on the free tier. This turned out to be the right call anyway, explained in the design decisions below.
  
 **Admin role plan**
  
