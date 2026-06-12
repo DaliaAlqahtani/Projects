@@ -262,3 +262,63 @@ The workflow:
 ## Step 5 - Department routing and welcome email
 
 This step extends the same Logic App. For users to be mapped to their corresponding department, I added another graph permission `GroupMember.ReadWrite.All` granted to the same managed identity with the same PowerShell script as before.
+
+**Routing by department**
+ 
+A Switch control looks at the Department value from the new row and branches into one of four cases (IT, Finance, Sales, Marketing). Each case adds the newly created user to the matching `SG-NJH-*` group with an HTTP call to Graph. Only the group ID changes between the four cases; everything else is identical.
+
+First, I used a script to view each group's object ID
+
+<p align="center"><img width="900" height="500" alt="security-groups-object-id" src="https://github.com/user-attachments/assets/2fc6be8b-ce1f-4721-85ec-4310b0c7207b" /></p>
+
+Then the Switch with the four cases and the HTTP call for each department
+
+<p align="center">https://github.com/user-attachments/assets/826a0e85-e042-4a34-89e9-316284d6c099</p>
+
+
+**Welcome email**
+ 
+The last action emails the new hire their details.
+
+The sender used the **Outlook.com connector**. The email is sent to the personal email address from the table row and includes a short HTML template with the company logo, the person's display name, job title, department, new sign-in name, and temporary password.
+
+<p align="center"><img width="1889" height="1166" alt="welcome-email-action" src="https://github.com/user-attachments/assets/4ea13962-13a0-49b1-942e-ca745b17ad07" /></p>
+
+
+## Testing and verification
+
+Because pre-existing rows do not fire the trigger, the Logic App was finished and enabled first, then a single test row was inserted to the **Employees** table so it would actually run:
+ 
+```sql
+INSERT INTO dbo.Employees (FirstName, LastName, Department, JobTitle, PersonalEmail)
+VALUES ('Khalid', 'AlDosari', 'IT', 'Network Engineer', 'dalianaalmanea+khalid@gmail.com');
+```
+<p align="center"><img width="2554" height="906" alt="new-hire-row" src="https://github.com/user-attachments/assets/bcec8d47-c687-41de-ae8c-852be61b0da4" /></p>
+
+**Note** I used my personal email so I can view the email message I've created.
+
+The full run succeeded end to end:
+
+<p align="center"><img width="2560" height="1042" alt="logic-app-run" src="https://github.com/user-attachments/assets/7675a25f-a642-4a82-8db8-85cad07faaba" /></p>
+
+
+- The new row fired the trigger within 3 minutes interval.
+- A new user, `khalid.aldosari@najmhorizon.onmicrosoft.com`, was created in Entra ID.
+- Because the department was IT, the user was added to `SG-NJH-IT`.
+
+ <p align="center"><img width="2269" height="723" alt="new-hire-view" src="https://github.com/user-attachments/assets/9aca959c-323b-42ec-abba-5f67efba3673" /></p>
+
+- A welcome email arrived at the personal address with the sign-in name and temporary password.
+
+  <p align="center"><img width="2560" height="1182" alt="welcome-email" src="https://github.com/user-attachments/assets/4c0f0d2b-968c-4988-b0d7-81a1f4de95f2" /></p>
+
+  ## Design decisions and trade-offs
+  
+  **Managed identity instead of a stored secret.** The Logic App authenticates to Microsoft Graph using a managed identity that Azure rotates automatically. The common approach stores a secret string that expires, has to be rotated, and can be leaked. The managed identity removes that secret entirely and improves security.
+
+  **Cloud Sync instead of the classic Connect tool.** The classic installer is retiring soon, and Cloud Sync is the current supported path, so this was both the necessary and the modern choice.
+
+  **Global Administrator kept cloud-only.** The top admin account is not a synced identity. If the on-premises environment were ever compromised, a synced admin account would hand that control straight to the cloud. Keeping it cloud-only contains the damage.
+
+
+
