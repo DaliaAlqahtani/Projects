@@ -129,7 +129,7 @@ The actual role assignments were done after the IT staff were synced to the clou
  
 This step connects the two directories so on-premises users appear in the cloud and sign in with the same password. For this I used Microsoft's Entra Cloud Sync.
 
-**Why Cloud Sync**
+**Why I used Cloud Sync ?**
 
 Cloud Sync was selected over Entra Connect to demonstrate a modern hybrid identity architecture, since Entra Connect is retiring September 30, 2026. 
 
@@ -147,4 +147,118 @@ Cloud Sync was selected over Entra Connect to demonstrate a modern hybrid identi
 - Sync was verified by confirming the on-premises users now appear as synced accounts in Entra ID.
 <p align="center"><img width="2268" height="635" alt="synced-users" src="https://github.com/user-attachments/assets/08898a92-9d7d-4040-9284-7ed8d94b7bb2" /></p>
 
+**Admin roles assignment**
 
+the roles planned in Step 2 were assigned to the IT staff
+
+- User Administrator: Nawaf AlRashidi (IT Manager)
+- Helpdesk Administrator: Omar AlQahtani and Turki AlEnezi (Helpdesk Specialist and IT Support Technician) 
+- Groups Administrator: Walid AlRuwaili (Identity & Access Admin)
+- Authentication Administrator: Tariq AlZahrani (Cybersecurity Analyst)
+
+<p  align="center"><img width="1800" height="681" alt="user-role-assignments" src="https://github.com/user-attachments/assets/4fd63ee2-82a6-4648-a1bb-f82a8ae30c9a" /></p>
+ 
+**Mapping synced users to cloud groups**
+
+I used a PowerShell script that read which OU each user belonged to on-premises and added the matching cloud user to the matching group, matching them by sign-in name.
+<p  align="center"><img width="1473" height="996" alt="populate-security-groups" src="https://github.com/user-attachments/assets/ded5a747-af0d-4e73-a7ac-7f19149e9453" /></p>
+<p  align="center"><img width="1567" height="1065" alt="security-groups-members(script)" src="https://github.com/user-attachments/assets/749576c2-43e4-4d8a-9dc9-6a024a522060" /></p>
+
+
+## Step 4 - HR database and the Logic App
+
+**Choosing the data source**
+
+Since this is a lab environment without access to enterprise HR platforms such as SAP SuccessFactors or Workday, I implemented a lightweight HR system using Azure SQL Database as the data source.
+
+**Governance and naming**
+
+Resources were placed under a clear structure: a management group (`mg-najmhorizon`) over the subscription, with all resources in one resource group (`rg-najmhorizon-prod-itn-001`). Names follow the Microsoft Cloud Adoption Framework pattern with environment (`prod`) and region (`itn`) tags:
+
+| Resource | Name |
+|---|---|
+| Management group | `mg-najmhorizon` |
+| Resource group | `rg-najmhorizon-prod-itn-001` |
+| SQL server | `sql-najmhorizon-prod-itn` |
+| SQL database | `sqldb-najmhorizon-hr-prod-itn` |
+| Logic App | `logic-najmhorizon-onboarding-prod-itn` |
+
+**The Employees table**
+ 
+The table used an auto-incrementing ID as its primary key. That column is what the Logic App watches to spot new rows, so it is required, not optional.
+
+```sql
+CREATE TABLE dbo.Employees (
+    EmployeeID    INT IDENTITY(1,1) PRIMARY KEY,
+    FirstName     NVARCHAR(100) NOT NULL,
+    LastName      NVARCHAR(100) NOT NULL,
+    Department    NVARCHAR(50)  NOT NULL,
+    JobTitle      NVARCHAR(100) NOT NULL,
+    PersonalEmail NVARCHAR(256) NOT NULL
+);
+```
+
+<p  align="center"><img width="2560" height="1199" alt="table-created" src="https://github.com/user-attachments/assets/0c533133-0e90-4bc6-be5c-fdde9a91aed3" /></p>
+
+**The Logic App**
+
+The purpose of the Logic App is that after a new row is inserted into the table, the Logic App is triggered, it generates the user's UPN and a temporary password, creates the user in Entra ID through Microsoft Graph and map it to the right department, then finally sends a welcome email done in [Step 5](#step-5---department-routing-and-welcome-email).
+ 
+A Consumption Logic App was created in the same region and resource group as the database. It was given a **system-assigned managed identity**, and that identity was granted the Microsoft Graph permission `User.ReadWrite.All` through PowerShell.
+
+First, the system-assigned managed identity was enabled
+
+<p  align="center">https://github.com/user-attachments/assets/4121e618-6d0a-4c9a-a969-133b81aa0fe0</p>
+
+Then, the graph permission granted
+
+```powershell 
+# --- Variables ---
+$logicAppName = "logic-najmhorizon-onboarding-prod-itn"   # the MI shares the Logic App's name
+$graphAppId   = "00000003-0000-0000-c000-000000000000"     # Microsoft Graph AppId
+$permission   = "User.ReadWrite.All"
+
+# --- Service principal of the Logic App's managed identity ---
+$msi = Get-MgServicePrincipal -Filter "displayName eq '$logicAppName'"
+
+# --- Microsoft Graph service principal in the tenant ---
+$graphSp = Get-MgServicePrincipal -Filter "appId eq '$graphAppId'"
+
+# --- Find the application permission (app role) ---
+$appRole = $graphSp.AppRoles |
+    Where-Object { $_.Value -eq $permission -and $_.AllowedMemberTypes -contains "Application" }
+
+# --- Assign it to the managed identity ---
+New-MgServicePrincipalAppRoleAssignment `
+    -ServicePrincipalId $msi.Id `
+    -PrincipalId        $msi.Id `
+    -ResourceId         $graphSp.Id `
+    -AppRoleId          $appRole.Id
+```
+
+The grant can be verified with the `User.ReadWrite.All` permission:
+
+<p align="center"><img width="2560" height="1031" alt="verify-grant-managed-identity-permissions" src="https://github.com/user-attachments/assets/b30ebcb7-e5aa-4b01-ac70-a8a4661eea82" /></p>
+
+The workflow:
+
+1. **Trigger:** the SQL "When an item is created" trigger, watching `dbo.Employees` every 3 minutes.
+<p align="center"><img width="329" height="500" alt="trigger-configuration" src="https://github.com/user-attachments/assets/7cfa6f0a-8ec7-493d-bdbf-21ef80076c03" /></p>
+
+2. **Build the values:** four small Compose steps build the sign-in name, the display name, and a temporary password:
+   - Mail nickname: first and last name, lowercased and joined with a dot.
+   - Sign-in name (UPN): the mail nickname plus `@najmhorizon.onmicrosoft.com`.
+   - Display name: first and last name with a space.
+   - Temporary password: a fixed prefix plus part of a generated GUID, which always meets the complexity rules and is different every time.
+
+  <p align="center">https://github.com/user-attachments/assets/2c97f370-9c81-4f45-adc9-a83d7d524111</p>
+
+3. **Create the user:** an HTTP call to the Microsoft Graph users endpoint, authenticated with the managed identity, with the new user set to change their password at first sign-in using `forceChangePasswordNextSignIn: true` in the HTTP body.
+
+<p align="center"><img width="529" height="500" alt="logic-app-http-action" src="https://github.com/user-attachments/assets/2ddac2c8-e8d1-4eb4-9d6e-3c9f450340f6" /></p>
+
+
+ 
+## Step 5 - Department routing and welcome email
+
+This step extends the same Logic App. For users to be mapped to their corresponding department, I added another graph permission `GroupMember.ReadWrite.All` granted to the same managed identity with the same PowerShell script as before.
